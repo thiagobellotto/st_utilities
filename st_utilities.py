@@ -146,20 +146,25 @@ with st.spinner(text='Lendo o arquivo. Aguarde...'):
         file_name = file.name.replace('.xlsx', '').replace('.xls', '')
         st.text('Número de linhas: {}'.format(df.shape[0]))
         st.text('Número de colunas: {}'.format(df.shape[1]))
+        my_expander = st.expander(label='Visualizar planilha')
         try:
-
-            st.dataframe(df, width=800)
+            with my_expander:
+                st.dataframe(df, width=800)
         except StreamlitAPIException:
-            st.text('Não foi possível exibir o arquivo.')
+            with my_expander:
+                st.text('Não foi possível exibir o arquivo.')
     elif extension == 'csv':
         df = read_csv(file)
+        file_name = file.name.replace('.csv', '')
         st.text('Número de linhas: {}'.format(df.shape[0]))
         st.text('Número de colunas: {}'.format(df.shape[1]))
+        my_expander = st.expander(label='Visualizar planilha')
         try:
-            st.dataframe(df, width=800)
+            with my_expander:
+                st.dataframe(df, width=800)
         except StreamlitAPIException:
-            st.text('Não foi possível exibir o arquivo.')
-        file_name = file.name.replace('.csv', '')
+            with my_expander:
+                st.text('Não foi possível exibir o arquivo.')
     else:
         st.warning("Formato de arquivos não permitido. Em caso de dúvidas, entrar em contato com Thiago Bellotto.")
         st.stop()
