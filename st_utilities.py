@@ -12,7 +12,7 @@ from PIL import Image
 @cache
 def reduce_precision(df):
         cols_to_convert = []
-        date_strings = ['_date', 'date_', 'date', 'data', 'Data', 'Datas', 'datas']
+        date_strings = ['_date', 'date_', 'date', 'data', 'Data', 'Datas', 'datas', 'Data de cancelamento']
 
         for col in df.columns:
             col_type = df[col].dtype
@@ -86,7 +86,6 @@ def reduce_image_size_without_losing_quality(image_path, max_size=8164):
     """
     image = Image.open(image_path)
     width, height = image.size
-    print(width, height)
     if width <= max_size and height <= max_size:
         return image
     size = (max_size, max_size)
@@ -106,9 +105,17 @@ def read_excel(file):
     df1 = df.copy()
     return df
 
+@cache
+@st.cache(suppress_st_warning=True)
+def select_excel_sheet(file):
+    sheets = pd.read_excel(file, sheet_name=None)
+    sheet_names = list(sheets.keys())
+    sheet_names.sort()
+    return sheets, sheet_names
+
 st.set_page_config(layout="centered", page_icon="random") 
 st.set_option('deprecation.showPyplotGlobalUse', False)
-st.title('Ferramentas - Bellotto')
+st.title('Ferramentas')
 st.header('Por favor, selecione o arquivo e selecione a funcionalidade desejada.')
 
 file = st.file_uploader("Insira o arquivo abaixo:", )
@@ -121,14 +128,16 @@ with st.spinner(text='Lendo o arquivo. Aguarde...'):
     if extension in ['jpeg', 'png', 'jpg']:
         image = reduce_image_size_without_losing_quality(file)
     elif extension in ['xlsx', 'xls']:
-        df = read_excel(file)
+        df, sheet_names = select_excel_sheet(file)
+        sheet_name = st.selectbox("Selecione a aba:", sheet_names)
+        df = df[sheet_name]
     elif extension == 'csv':
         df = read_csv(file)
     else:
         st.warning("Formato de arquivos não permitido. Em caso de dúvidas, entrar em contato com Thiago Bellotto.")
         st.stop()
 
-if st.button('Gerar análises'):
+if st.button('Realizar conversões'):
     with st.spinner(text='Realizando conversões... Aguarde.'):
         
         try:
