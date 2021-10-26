@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image
 import base64
 
-@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, show_spinner=False)
 def reduce_precision(df):
         cols_to_convert = []
         date_strings = ['_date', 'date_', 'date', 'data', 'Data', 'Datas', 'datas', 'Data de cancelamento']
@@ -82,7 +82,7 @@ def reduce_precision(df):
 
         return df
 
-@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, show_spinner=False)
 def reduce_image_size_without_losing_quality(image_path, max_size=8164):
     """
     Reduce the size of an image without losing the image quality.
@@ -96,26 +96,26 @@ def reduce_image_size_without_losing_quality(image_path, max_size=8164):
     image.save("Compressed_"+image, optimize=True, quality=85)
     return image
 
-@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, show_spinner=False)
 def read_csv(file):
     df = pd.read_csv(file)
     df1 = df.copy()
     return df
 
-@st.cache(suppress_st_warning=True, allow_output_mutation=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, show_spinner=False)
 def read_excel(file):
     df = pd.read_excel(file, engine='openpyxl')
     df1 = df.copy()
     return df
 
-@st.cache(suppress_st_warning=True, allow_output_mutation=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, show_spinner=False)
 def select_excel_sheet(file):
     sheets = pd.read_excel(file, sheet_name=None, engine='openpyxl')
     sheet_names = list(sheets.keys())
     sheet_names.sort()
     return sheets, sheet_names
 
-@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, show_spinner=False)
 def read_xlsx_as_bytes(file):
     with open(file, 'rb') as f:
         data = f.read()
@@ -124,8 +124,13 @@ def read_xlsx_as_bytes(file):
 st.set_page_config(layout="centered", page_icon='🐍')
 st.set_option('deprecation.showPyplotGlobalUse', False)
 st.title('Ferramentas')
-st.header('Por favor, selecione o arquivo e selecione a funcionalidade desejada.')
-file = st.file_uploader("Insira o arquivo abaixo:", )
+st.header('''
+    A ferramenta permite ao usuário:
+        1. Reduzir o tamanho de imagens sem perder a qualidade;
+        2. Reduzir o tamanho de arquivos CSV e Excel ajustando os tipos de dados;
+    Para isto, é necessário que o usuário selecione o arquivo que deseja, e a ferramenta identificará a extensão automaticamente.
+''')
+file = st.file_uploader("", type=["csv", "xlsx", "jpeg", "png", "jpg"])
 if not file:
     st.stop()
 
@@ -142,6 +147,7 @@ with st.spinner(text='Lendo o arquivo. Aguarde...'):
         st.text('Número de linhas: {}'.format(df.shape[0]))
         st.text('Número de colunas: {}'.format(df.shape[1]))
         try:
+
             st.dataframe(df, width=800)
         except StreamlitAPIException:
             st.text('Não foi possível exibir o arquivo.')
@@ -158,13 +164,13 @@ with st.spinner(text='Lendo o arquivo. Aguarde...'):
         st.warning("Formato de arquivos não permitido. Em caso de dúvidas, entrar em contato com Thiago Bellotto.")
         st.stop()
 
+
 if st.button('Realizar conversões'):
     with st.spinner(text='Realizando conversões... Aguarde.'):
         
         try:
-            st.image(image)
+            st.image(image, caption='Para salvar a imagem, clique com o botão direto e vá em "Salvar imagem como".')
         except NameError:
-
             try:
                 if df.empty:
                     st.warning('Nenhum dado encontrado.')
