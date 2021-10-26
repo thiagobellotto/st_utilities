@@ -104,13 +104,13 @@ def read_csv(file):
 
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_excel(file):
-    df = pd.read_excel(file)
+    df = pd.read_excel(file, engine='openpyxl')
     df1 = df.copy()
     return df
 
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def select_excel_sheet(file):
-    sheets = pd.read_excel(file, sheet_name=None)
+    sheets = pd.read_excel(file, sheet_name=None, engine='openpyxl')
     sheet_names = list(sheets.keys())
     sheet_names.sort()
     return sheets, sheet_names
@@ -121,11 +121,10 @@ def read_xlsx_as_bytes(file):
         data = f.read()
     return data
 
-st.set_page_config(layout="centered", page_icon="random") 
+st.set_page_config(layout="centered", page_icon='🐍')
 st.set_option('deprecation.showPyplotGlobalUse', False)
 st.title('Ferramentas')
 st.header('Por favor, selecione o arquivo e selecione a funcionalidade desejada.')
-
 file = st.file_uploader("Insira o arquivo abaixo:", )
 if not file:
     st.stop()
