@@ -5,9 +5,13 @@ import pandas as pd
 import streamlit as st
 from streamlit.errors import StreamlitAPIException
 import io
+import time
+import os
 import numpy as np
 from PIL import Image
+import smtplib
 import base64
+from email import *
 
 @st.cache(suppress_st_warning=True, allow_output_mutation=True, show_spinner=False)
 def reduce_precision(df):
@@ -118,6 +122,23 @@ def read_xlsx_as_bytes(file):
         data = f.read()
     return data
 
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, show_spinner=False)
+def estatistics_from_df(df):
+    df_stats = pd.DataFrame(index=df.columns)
+    df_stats['Tipos'] = df.dtypes
+    df_stats['Total_itens'] = df.count()
+    df_stats['Únicos'] = df.nunique()
+    df_stats['Nulos'] = df.isnull().sum()
+    df_stats['Mínimo'] = df.min()
+    df_stats['Máximo'] = df.max()
+    df_stats['Média'] = round(df.mean(), 2)
+    df_stats['Mediana'] = round(df.median(), 2)
+    # df_stats['Std'] = df.std()
+    # df_stats['Variance'] = round(df.var(), 2)
+    # df_stats['Kurtosis'] = round(df.kurtosis(), 2)
+    # df_stats['Skewness'] = round(df.skew(), 2)
+    return df_stats.astype(str)
+
 st.set_page_config(layout="centered", page_icon='🐍')
 st.set_option('deprecation.showPyplotGlobalUse', False)
 st.title('Redução de imagens e tratamento de arquivos em excel')
@@ -155,9 +176,7 @@ text-align: center;
 <p>Developed with ❤ by <a style='display: block; color: white; text-align: center;' href="https://www.linkedin.com/in/thiago-bellotto/" target="_blank">Thiago Bellotto</a></p>
 </div>
 """
-st.markdown(footer,unsafe_allow_html=True)
-
-
+st.markdown(footer, unsafe_allow_html=True)
 
 file = st.file_uploader("", type=["csv", "xlsx", "jpeg", "png", "jpg"], )
 if not file:
@@ -175,10 +194,13 @@ with st.spinner(text='Lendo o arquivo. Aguarde...'):
         file_name = file.name.replace('.xlsx', '').replace('.xls', '')
         st.text('Número de linhas: {}'.format(df.shape[0]))
         st.text('Número de colunas: {}'.format(df.shape[1]))
-        my_expander = st.expander(label='Visualizar planilha')
+        my_expander = st.expander(label='Visualizar planilha e estatísticas')
         try:
             with my_expander:
+                st.subheader('Dataframe')
                 st.dataframe(df, width=800)
+                st.subheader('Estatísticas')
+                st.dataframe(estatistics_from_df(df), width=800)
         except StreamlitAPIException:
             with my_expander:
                 st.text('Não foi possível exibir o arquivo.')
@@ -187,10 +209,13 @@ with st.spinner(text='Lendo o arquivo. Aguarde...'):
         file_name = file.name.replace('.csv', '')
         st.text('Número de linhas: {}'.format(df.shape[0]))
         st.text('Número de colunas: {}'.format(df.shape[1]))
-        my_expander = st.expander(label='Visualizar planilha')
+        my_expander = st.expander(label='Visualizar planilha e estatísticas')
         try:
             with my_expander:
+                st.subheader('Dataframe')
                 st.dataframe(df, width=800)
+                st.subheader('Estatísticas')
+                st.dataframe(estatistics_from_df(df), width=800)
         except StreamlitAPIException:
             with my_expander:
                 st.text('Não foi possível exibir o arquivo.')
@@ -198,28 +223,27 @@ with st.spinner(text='Lendo o arquivo. Aguarde...'):
         st.warning("Formato de arquivos não permitido. Em caso de dúvidas, entrar em contato com Thiago Bellotto.")
         st.stop()
 
-
 if st.button('Realizar conversões'):
     with st.spinner(text='Realizando conversões... Aguarde.'):
         
         try:
             st.image(image, caption='Para salvar a imagem, clique com o botão direto e vá em "Salvar imagem como".')
         except NameError:
-            try:
-                if df.empty:
-                    st.warning('Nenhum dado encontrado.')
-                elif df.shape[1] == 1:
-                    st.text('Não é possível gerar análises com apenas uma coluna.')
-                elif df.shape[1] == 2:
-                    st.text('Não é possível gerar análises com apenas duas colunas.')
-                else:
-                    df = reduce_precision(df)
-                    towrite = io.BytesIO()
-                    downloaded_file = df.to_excel(towrite, encoding='utf-8', index=False, header=True) # write to BytesIO buffer
-                    towrite.seek(0)  # reset pointer
-                    b64 = base64.b64encode(towrite.read()).decode() 
-                    linko = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{file_name}.xlsx">Download excel</a>'
-                    st.markdown(linko, unsafe_allow_html=True)
-            except:
-                st.warning('Não foi possível gerar as conversões.')
+            # try:
+            if df.empty:
+                st.warning('Nenhum dado encontrado.')
+            elif df.shape[1] == 1:
+                st.text('Não é possível gerar análises com apenas uma coluna.')
+            elif df.shape[1] == 2:
+                st.text('Não é possível gerar análises com apenas duas colunas.')
+            else:
+                df = reduce_precision(df)
+                towrite = io.BytesIO()
+                downloaded_file = df.to_excel(towrite, encoding='utf-8', index=False, header=True) # write to BytesIO buffer
+                towrite.seek(0)  # reset pointer
+                b64 = base64.b64encode(towrite.read()).decode()  # base64 encode
+                linko = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64, {b64}"  style="color: white" download="{file_name}.xlsx">Download excel</a>'
+                st.markdown(linko, unsafe_allow_html=True)
+            # except:
+            #     st.warning('Não foi possível gerar as conversões.')
 
