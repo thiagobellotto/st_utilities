@@ -4,10 +4,7 @@
 import pandas as pd
 import streamlit as st
 from streamlit.errors import StreamlitAPIException
-from streamlit.legacy_caching.caching import cache
-import os
 import io
-import time
 import numpy as np
 from PIL import Image
 import base64
@@ -123,14 +120,46 @@ def read_xlsx_as_bytes(file):
 
 st.set_page_config(layout="centered", page_icon='🐍')
 st.set_option('deprecation.showPyplotGlobalUse', False)
-st.title('Ferramentas')
+st.title('Redução de imagens e tratamento de arquivos em excel')
 st.header('''
     A ferramenta permite ao usuário:
         1. Reduzir o tamanho de imagens sem perder a qualidade;
         2. Reduzir o tamanho de arquivos CSV e Excel ajustando os tipos de dados;
-    Para isto, é necessário que o usuário selecione o arquivo que deseja, e a ferramenta identificará a extensão automaticamente.
+    Idealmente, para os arquivos em excel, recomendo que estejam em formato base de dados. Para continuar, é necessário que o usuário selecione o arquivo que deseja, e a ferramenta identificará a extensão automaticamente.
 ''')
-file = st.file_uploader("", type=["csv", "xlsx", "jpeg", "png", "jpg"])
+
+footer="""<style>
+a:link , a:visited{
+color: blue;
+background-color: transparent;
+text-decoration: underline;
+}
+
+a:hover,  a:active {
+color: red;
+background-color: transparent;
+text-decoration: underline;
+}
+
+.footer {
+position: fixed;
+left: 0;
+bottom: 0;
+width: 100%;
+background-color: transparent;
+color: white;
+text-align: center;
+}
+</style>
+<div class="footer">
+<p>Developed with ❤ by <a style='display: block; color: white; text-align: center;' href="https://www.linkedin.com/in/thiago-bellotto/" target="_blank">Thiago Bellotto</a></p>
+</div>
+"""
+st.markdown(footer,unsafe_allow_html=True)
+
+
+
+file = st.file_uploader("", type=["csv", "xlsx", "jpeg", "png", "jpg"], )
 if not file:
     st.stop()
 
@@ -193,3 +222,4 @@ if st.button('Realizar conversões'):
                     st.markdown(linko, unsafe_allow_html=True)
             except:
                 st.warning('Não foi possível gerar as conversões.')
+
