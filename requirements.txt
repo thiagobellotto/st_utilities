@@ -2,3 +2,4 @@ pandas==1.2.0
 numpy==1.19.5
 streamlit==1.0.0
 Pillow==8.1.2
+xlrd >= 1.0.0
