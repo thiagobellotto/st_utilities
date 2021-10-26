@@ -3,13 +3,16 @@
 
 import pandas as pd
 import streamlit as st
+from streamlit.errors import StreamlitAPIException
 from streamlit.legacy_caching.caching import cache
 import os
+import io
 import time
 import numpy as np
 from PIL import Image
+import base64
 
-@cache
+@st.cache(suppress_st_warning=True)
 def reduce_precision(df):
         cols_to_convert = []
         date_strings = ['_date', 'date_', 'date', 'data', 'Data', 'Datas', 'datas', 'Data de cancelamento']
@@ -79,7 +82,7 @@ def reduce_precision(df):
 
         return df
 
-@cache
+@st.cache(suppress_st_warning=True)
 def reduce_image_size_without_losing_quality(image_path, max_size=8164):
     """
     Reduce the size of an image without losing the image quality.
@@ -93,25 +96,30 @@ def reduce_image_size_without_losing_quality(image_path, max_size=8164):
     image.save("Compressed_"+image, optimize=True, quality=85)
     return image
 
-@cache
+@st.cache(suppress_st_warning=True)
 def read_csv(file):
     df = pd.read_csv(file)
     df1 = df.copy()
     return df
 
-@cache
+@st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def read_excel(file):
     df = pd.read_excel(file)
     df1 = df.copy()
     return df
 
-@cache
-@st.cache(suppress_st_warning=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def select_excel_sheet(file):
     sheets = pd.read_excel(file, sheet_name=None)
     sheet_names = list(sheets.keys())
     sheet_names.sort()
     return sheets, sheet_names
+
+@st.cache(suppress_st_warning=True)
+def read_xlsx_as_bytes(file):
+    with open(file, 'rb') as f:
+        data = f.read()
+    return data
 
 st.set_page_config(layout="centered", page_icon="random") 
 st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -131,8 +139,22 @@ with st.spinner(text='Lendo o arquivo. Aguarde...'):
         df, sheet_names = select_excel_sheet(file)
         sheet_name = st.selectbox("Selecione a aba:", sheet_names)
         df = df[sheet_name]
+        file_name = file.name.replace('.xlsx', '').replace('.xls', '')
+        st.text('Número de linhas: {}'.format(df.shape[0]))
+        st.text('Número de colunas: {}'.format(df.shape[1]))
+        try:
+            st.dataframe(df, width=800)
+        except StreamlitAPIException:
+            st.text('Não foi possível exibir o arquivo.')
     elif extension == 'csv':
         df = read_csv(file)
+        st.text('Número de linhas: {}'.format(df.shape[0]))
+        st.text('Número de colunas: {}'.format(df.shape[1]))
+        try:
+            st.dataframe(df, width=800)
+        except StreamlitAPIException:
+            st.text('Não foi possível exibir o arquivo.')
+        file_name = file.name.replace('.csv', '')
     else:
         st.warning("Formato de arquivos não permitido. Em caso de dúvidas, entrar em contato com Thiago Bellotto.")
         st.stop()
@@ -143,16 +165,21 @@ if st.button('Realizar conversões'):
         try:
             st.image(image)
         except NameError:
-            if df.empty:
-                st.warning('Nenhum dado encontrado.')
-            elif df.shape[1] == 1:
-                st.text('Não é possível gerar análises com apenas uma coluna.')
-            elif df.shape[1] == 2:
-                st.text('Não é possível gerar análises com apenas duas colunas.')
-            else:
-                df = reduce_precision(df)
-                st.text('Número de linhas: {}'.format(df.shape[0]))
-                st.text('Número de colunas: {}'.format(df.shape[1]))
-                st.dataframe(df, width=800)
 
-                st.download_button(label = 'Download CSV', data = df.to_csv(index=False), file_name = 'arquivo_reduzido.csv', mime = 'text/csv')
+            try:
+                if df.empty:
+                    st.warning('Nenhum dado encontrado.')
+                elif df.shape[1] == 1:
+                    st.text('Não é possível gerar análises com apenas uma coluna.')
+                elif df.shape[1] == 2:
+                    st.text('Não é possível gerar análises com apenas duas colunas.')
+                else:
+                    df = reduce_precision(df)
+                    towrite = io.BytesIO()
+                    downloaded_file = df.to_excel(towrite, encoding='utf-8', index=False, header=True) # write to BytesIO buffer
+                    towrite.seek(0)  # reset pointer
+                    b64 = base64.b64encode(towrite.read()).decode() 
+                    linko = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{file_name}.xlsx">Download excel</a>'
+                    st.markdown(linko, unsafe_allow_html=True)
+            except:
+                st.warning('Não foi possível gerar as conversões.')
