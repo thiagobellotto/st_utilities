@@ -64,7 +64,7 @@ if st.button('Converter imagem', key='converter'):
     with st.spinner(text='Convertendo a imagem... Aguarde.'):
         try:
             image = reduce_image_size_without_losing_quality(file).convert('RGB')
-            st.image(image, caption='Para salvar a imagem, clique com o botão direto e vá em "Salvar imagem como".')        
+            st.image(image, caption='Para salvar a imagem, clique com o botão direito e vá em "Salvar imagem como".')        
         except:
             st.warning("Não foi possível realizar a conversão. Em caso de dúvidas, entrar em contato com Thiago Bellotto.")
             st.stop()
